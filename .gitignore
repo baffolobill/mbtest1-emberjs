@@ -1,17 +1,45 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
+.DS_Store
+lib-cov
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
 
-# compiled output
-/dist
-/tmp
+tmp
+bower_components
 
-# dependencies
-/node_modules
-/bower_components
+pids
+logs/*
+./results
+build/*
+dist/*
+js/*
+report/*
+coverage/*
+temp/*
+config/extensions.json
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage/*
-/libpeerconnection.log
+ext.json
 npm-debug.log
-testem.log
+node_modules
+
+# bower
+static/javascripts
+.bower-cache
+.bower-registry
+.bower-tmp
+
+# emacs and other IDEs
+*~
+*.iml
+
+# sublime project files
+*.sublime-project
+*.sublime-workspace
+
+# development ssl certificate
+*.crt
+*.key
