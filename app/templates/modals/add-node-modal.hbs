@@ -1,0 +1,17 @@
+{{#view "form-fields/form-section" model=view.model}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        inputClassNames="full"
+        labelText="Name"
+        field="name"
+        name="name"
+    }}
+
+    {{view "form-fields/textarea-form-field"
+        model=view.model
+        inputClassNames="full"
+        labelText="Address"
+        field="address"
+        name="address"
+    }}
+{{/view}}

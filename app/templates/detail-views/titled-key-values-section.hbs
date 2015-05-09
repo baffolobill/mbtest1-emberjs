@@ -1,0 +1,22 @@
+<div class="key-value-display">
+    <h3>
+        {{view.title}}
+
+        {{#if view.deleteModelModalClass}}
+            <a class="pull-right delete-model-link text-danger" {{action "openModal" view.deleteModelModalClass view.model}}>
+                <i class="fa fa-trash-o"></i>
+            </a>
+        {{/if}}
+        {{#if view.editModelModalClass}}
+            <a class="pull-right edit-model-link" {{action "openModal" view.editModelModalClass view.model}}>
+                <i class="fa fa-edit"></i>
+            </a>
+        {{/if}}
+    </h3>
+    <dl class="dl-horizontal">
+        {{#each item in view.keyValueListViews}}
+            {{view item}}
+        {{/each}}
+        {{yield}}
+    </dl>
+</div>

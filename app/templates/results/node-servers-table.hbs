@@ -1,0 +1,40 @@
+<thead>
+    <tr>
+        <th class="col-xs-1"><span>ID</span></th>
+        <th><span>Name</span></th>
+        <th><span>Basket</span></th>
+        <th><span>Rack</span></th>
+        <th><span>Row</span></th>
+        <th><span>Room</span></th>
+        <th><span>Floor</span></th>
+        <th><span>Date Installed</span></th>
+    </tr>
+</thead>
+
+<tbody>
+    {{#each server in view.loader.results}}
+    <tr>
+        <td>{{server.id}}</td>
+        {{view "tables/cells/titled-linked-cell" routeName="server" item=server labelText=server.name}}
+        {{#if server.basket }}
+            {{view "tables/cells/titled-linked-cell" routeName="basket" item=server.basket labelText=server.basket.name}}
+        {{else}}
+            <td>---</td>
+        {{/if}}
+
+        {{#with server.rack as rack}}
+        {{view "tables/cells/titled-linked-cell" routeName="rack" item=rack labelText=rack.name}}
+        {{view "tables/cells/titled-linked-cell" routeName="row" item=rack.row labelText=rack.row.name}}
+        {{view "tables/cells/titled-linked-cell" routeName="room" item=rack.row.room labelText=rack.row.room.name}}
+        {{view "tables/cells/titled-linked-cell" routeName="floor" item=rack.row.room.floor labelText=rack.row.room.floor.name}}
+        {{/with}}
+        <td><span>Not Implemented</span></td>
+    </tr>
+    {{else}}
+        <tr>
+            <td colspan="8" class="no-results">
+                <span>No servers</span>
+            </td>
+        </tr>
+    {{/each}}
+</tbody>

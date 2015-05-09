@@ -1,0 +1,208 @@
+import Ember from "ember";
+import DS from "ember-data";
+
+var JSON_PROPERTY_KEY = '__json';
+var LINKS_PROPERTY_KEY = '__links';
+var EMBEDDED_DATA_PROPERTY_KEY = '__embedded';
+
+export default DS.RESTSerializer.extend({
+    //  properties which are not echoed back to the server
+    privateProperties: ['id', 'uri', 'validationErrors', JSON_PROPERTY_KEY, LINKS_PROPERTY_KEY, EMBEDDED_DATA_PROPERTY_KEY, '_type'],
+
+    serialize: function(snapshot, options) {
+        //return this._propertiesMap(snapshot);
+        return this._super(snapshot, options);
+    },
+
+    extractSingle: function(store, type, payload, id) {
+    //extractSingle: function(rootJson, href) {
+        /*var modelObj;
+        var objType;
+
+        var objTypes = _.keys(_.omit(rootJson, "links", "meta", "errors"));
+        if (objTypes.length === 0) {
+            return null;
+        }
+
+        if (objTypes.length > 1) {
+            Ember.warn("Got more than we bargained for in extractSingle");
+        }
+
+        objType = objTypes[0];
+
+        modelObj = rootJson[objType] && rootJson[objType][0];
+
+        // Hack to make it serialize as rev0 just in case.
+        if (!modelObj) {
+            modelObj = rootJson;
+        }
+
+        this._populateObject(modelObj, objType, rootJson);*/
+
+        //return modelObj;
+        return this._super(store, type, payload, id);
+    },
+
+    extractArray: function(store, type, rawPayload, id, requestType) {
+        var payload = this.normalizePayload(rawPayload);
+        var normalizedArray;
+        for (var typeName in payload) {
+            var type = store.modelFor(typeName);
+            var typeSerializer = store.serializerFor(type);
+            var normalizedArray = Ember.ArrayPolyfills.map.call(payload[typeName], function(hash) {
+                return typeSerializer.normalize(type, hash, typeName);
+            }, this);
+
+            break;
+        }
+        Ember.Logger.debug('extractArray results: ');
+        Ember.Logger.debug(normalizedArray);
+        return normalizedArray;//this._super(store, type, convertedPayload, id, requestType);
+    },//*/
+
+    extractMeta: function(store, type, payload) {
+        var meta = {
+            linked: null,
+            next_uri: null,
+            counts: null,
+            total: null
+        };
+        if (payload) {
+            if (payload.linked) {
+                meta.linked = payload.linked;
+                delete payload.linked;
+            }
+            if (payload.meta) {
+                meta.next_uri = payload.meta.next;
+                meta.counts = payload.meta.counts;
+                meta.total = payload.meta.total;
+                delete payload.meta;
+            }
+            store.setMetadataFor(type, meta);
+        }
+    },
+
+    /*extractCollection: function(rootJson) {
+        var collection = [];
+        var self = this;
+
+        var populateFunc = function(val) {
+            collection.push(self._populateObject(val, typeName, rootJson));
+        };
+        for (var typeName in rootJson) {
+            var vals = rootJson[typeName];
+            if ($.isArray(vals)) {
+                _.each(vals, populateFunc);
+            }
+        }
+
+        var linked = rootJson.linked ? rootJson.linked : null;
+        var nextUri = rootJson.meta ? rootJson.meta.next : null;
+        var counts = rootJson.meta ? rootJson.meta.counts : null;
+        var total = rootJson.meta ? rootJson.meta.total : null;
+
+        return {
+            items: collection,
+            linked: linked,
+            next_uri: nextUri,
+            counts: counts,
+            total: total
+        };
+    },*/
+
+    /*_populateObject: function(modelObj, objType, rootJson) {
+        var linksValues = {};
+        linksValues[objType + '.id'] = modelObj.id;
+        linksValues[objType + '.self'] = modelObj.id;
+
+        if (modelObj.links) {
+            for (var key in modelObj.links) {
+                linksValues[objType + '.' + key] = modelObj.links[key];
+            }
+        }
+
+        var replaceHrefFunc = function(match, linkParam) {
+            var replacement = linksValues[linkParam];
+
+            if (replacement === undefined) {
+                Ember.Logger.warn("Couldn't find replacement for param %@".fmt(linkParam));
+                throw new Error("Undefined value for URL macro");
+            }
+
+            if (replacement === null) {
+                throw new Error("Null value for URL macro");
+            }
+
+            return replacement;
+        };
+
+        var templatedLinks = {};
+        var objPropertyName = objType;
+        for (var link in rootJson.links) {
+            if (link.indexOf(objPropertyName + ".") === 0) {
+                var linkName = link.substring(objPropertyName.length + 1);
+
+                // Template all the links
+                var href = rootJson.links[link];
+
+                try {
+                    var replacedHref = href.replace(/\{([\.\w]+)\}/g, replaceHrefFunc);
+                    templatedLinks[linkName] = replacedHref;
+                } catch (e) {
+                    templatedLinks[linkName] = null;
+                }
+            }
+        }
+
+        for (link in templatedLinks) {
+            modelObj[link + "_uri"] = templatedLinks[link];
+        }
+
+        modelObj.uri = modelObj.href;
+        modelObj._type = objType.replace(/s$/, '');
+        return modelObj;
+    },*/
+
+    // Taken from http://stackoverflow.com/questions/9211844/reflection-on-emberjs-objects-how-to-find-a-list-of-property-keys-without-knowi
+    _propertiesMap: function(record) {
+        var computedProps = [];
+        record.type.eachComputedProperty(function(prop) {
+            computedProps.push(prop);
+        });
+
+        var lifecycleProperties = ['isLoaded', 'isNew', 'isSaving', 'isValid', 'isError', 'isDeleted'];
+
+        Ember.Logger.debug('_propertiesMap:');
+        Ember.Logger.debug('>>> record:');
+        Ember.Logger.debug(record);
+        Ember.Logger.debug('>>> record.attributes:');
+        Ember.Logger.debug(record.attributes());
+
+        var props = {};
+        for (var prop in record.attributes()) {
+            if (record.hasOwnProperty(prop) &&
+                $.inArray(prop, computedProps) === -1 &&
+                $.inArray(prop, lifecycleProperties) === -1 &&
+                $.inArray(prop, this.privateProperties) === -1 &&
+                prop.indexOf('__ember') < 0 &&
+                prop.indexOf('_super') < 0 &&
+                Ember.typeOf(record.attr(prop)) !== 'function'
+            ) {
+                props[prop] = record[prop];
+            }
+        }
+
+        Ember.Logger.debug('>>> return:');
+        Ember.Logger.debug(props);
+
+        return props;
+    },
+
+    keyForAttribute: function(key) {
+        return Ember.String.decamelize(key);
+    },
+
+    keyForRelationship: function(key) {
+        return Ember.String.decamelize(key);
+    }
+});

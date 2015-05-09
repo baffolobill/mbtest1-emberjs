@@ -1,0 +1,15 @@
+{{#view "form-fields/form-section" model=view.model sectionTitle="Node information"}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Name"
+        field="name"
+    }}
+
+    {{view "form-fields/textarea-form-field"
+        model=view.model
+        labelText="Address"
+        field="address"
+        maxlength=434
+    }}
+{{/view}}
+
