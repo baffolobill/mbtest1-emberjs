@@ -2,12 +2,16 @@
     <tr>
         <th class="col-xs-1"><span>ID</span></th>
         <th><span>Name</span></th>
-        <th class="col-xs-1"><span>Server Qty</span></th>
+        <th class="col-xs-2"><span>Server Qty</span></th>
     </tr>
 </thead>
 
+{{#if view.loader.results.hasNextPage}}
+    {{view "results/results-load-more" results=view.loader.results columns=3}}
+{{/if}}
+
 <tbody>
-    {{#each node in view.loader}}
+    {{#each node in view.loader.results}}
         <tr>
             <td>{{node.id}}</td>
             {{view "tables/cells/titled-linked-cell" routeName="node" item=node labelText=node.name}}
@@ -16,7 +20,11 @@
     {{else}}
         <tr>
             <td colspan="3" class="no-results">
-                No nodes
+                {{#if view.loader.results.isLoaded}}
+                    No Nodes
+                {{else}}
+                    Loading...
+                {{/if}}
             </td>
         </tr>
     {{/each}}

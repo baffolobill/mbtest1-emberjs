@@ -1,0 +1,25 @@
+{{#view "form-fields/form-section" model=view.model sectionTitle="Rack information"}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Name"
+        field="name"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Total units"
+        field="total_units"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.rowsForSelect
+        value=view.parentView.selectedRow
+        labelText="Row"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="row"
+        field="row"
+    }}
+{{/view}}
+

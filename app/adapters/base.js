@@ -1,10 +1,9 @@
 import Ember from "ember";
-import DS from "ember-data";
 import ENV from "mb-test-1/config/environment";
 
-export default DS.RESTAdapter.extend({
+export default Ember.Object.extend({
   hostsByType: [],
-  defaultSerializer: "mb-test-1/serializers/rev2",
+  defaultSerializer: "mb-test-1/serializers/rev1",
   addTrailingSlashes: false,
 
   pathForType: function(type) {
@@ -13,6 +12,17 @@ export default DS.RESTAdapter.extend({
   },
 
   completeURL: function(uri){
+    Ember.Logger.debug('BaseAdapter.completeURL: uri=', uri);
+    if (uri.indexOf('http') === 0) {
+      return uri;
+    }
+
+    var namespace = Ember.get(this, 'namespace');
+    if (namespace && uri.indexOf(namespace) === 0) {
+      uri = uri.slice(namespace.length+1);
+      Ember.Logger.debug('BaseAdapter.completeURL: sliced uri=', uri);
+    }
+
     var url = [uri];
     var host = Ember.get(this, 'host');
     var prefix = this.urlPrefix();
@@ -88,5 +98,40 @@ export default DS.RESTAdapter.extend({
     if (!type) {
       throw new Error('Missing type in adapter call for %@'.fmt(uri));
     }
-  }
+  },
+
+  urlPrefix: function(path, parentURL) {
+    var host = Ember.get(this, 'host');
+    var namespace = Ember.get(this, 'namespace');
+    var url = [];
+
+    if (path) {
+      // Protocol relative url
+      //jscs:disable disallowEmptyBlocks
+      if (/^\/\//.test(path)) {
+        // Do nothing, the full host is already included. This branch
+        // avoids the absolute path logic and the relative path logic.
+
+      // Absolute path
+      } else if (path.charAt(0) === '/') {
+        //jscs:enable disallowEmptyBlocks
+        if (host) {
+          path = path.slice(1);
+          url.push(host);
+        }
+      // Relative path
+      } else if (!/^http(s)?:\/\//.test(path)) {
+        url.push(parentURL);
+      }
+    } else {
+      if (host) { url.push(host); }
+      if (namespace) { url.push(namespace); }
+    }
+
+    if (path) {
+      url.push(path);
+    }
+
+    return url.join('/');
+  },
 });

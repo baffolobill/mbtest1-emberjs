@@ -1,1 +1,13 @@
-{{outlet}}
+{{#view "page-navigations/page-navigation" title="Room List"}}
+  <div class="buttons page-actions">
+    <a class="btn" {{action "openModal" "modals/room-add-modal"}}>Add a room</a>
+  </div>
+{{/view}}
+
+<nav class="results-actions-bar"></nav>
+
+<div class="results">
+  <div class="items-wrapper">
+    {{view "results/rooms-table" loader=resultsLoader}}
+  </div>
+</div>

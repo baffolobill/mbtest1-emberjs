@@ -2,20 +2,20 @@ import Ember from "ember";
 import LoadPromise from "./mixins/load-promise";
 import TypeMappings from "./type-mappings";
 import Computed from "../../utils/computed";
-import Rev2Serializer from "mb-test-1/serializers/rev2";
+import Rev1Serializer from "mb-test-1/serializers/rev1";
 import Utils from "../../lib/utils";
 import ModelArray from "./model-array";
-import ValidationServerErrorHandler from "mb-test-1/utils/error-handlers/validation-server-error-handler";
+//import ValidationServerErrorHandler from "mb-test-1/utils/error-handlers/validation-server-error-handler";
+
 
 var JSON_PROPERTY_KEY = '__json';
 var URI_POSTFIX = '_uri';
 var URI_METADATA_PROPERTY = '_uris';
 var INTEGER_REGEX = /\b[0-9]+\b/;
-
+var PRIVATE_PROPERTIES = ['id', 'validationErrors', '_type'];
 var AJAX_ERROR_PARSERS = [];
 
 var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
-
     isLoaded: false,
     isSaving: false,
     isDeleted: false,
@@ -54,12 +54,14 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
 
         var resolveEvent = creatingNewModel ? 'didCreate' : 'didUpdate';
         var uri = creatingNewModel ? this._createUri() : this.get('uri');
-        var adapterFunc = creatingNewModel ? Adapter.create : Adapter.update;
+        var adapterFunc = creatingNewModel ? Adapter.createRecord : Adapter.updateRecord;
 
         var promise = this.resolveOn(resolveEvent);
 
-        adapterFunc.call(Adapter, this.constructor, uri, data, function(json) {
-            //FIXME:
+        Ember.Logger.debug('Model.save: uri=', uri);
+        Ember.Logger.debug('Model.save: data=', data);
+
+        adapterFunc.call(Adapter, this.constructor, uri, data, settings).then(function(json) {
             var deserializedJson = self.constructor.serializer.extractSingle(json, self.constructor, (creatingNewModel ? null : self.get('href')));
             self._updateFromJson(deserializedJson);
 
@@ -72,7 +74,7 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
 
             self.trigger(resolveEvent);
             Model.Events.trigger(resolveEvent, self);
-        }, $.proxy(self._handleError, self), settings);
+        }, $.proxy(self._handleError, self));
 
         return promise;
     },
@@ -95,7 +97,7 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
 
             var creatingNewModel = this.get('isNew');
             var uri = creatingNewModel ? this._createUri() : this.get('uri');
-            var adapterFunc = creatingNewModel ? Adapter.create : Adapter.update;
+            var adapterFunc = creatingNewModel ? Adapter.createRecord : Adapter.updateRecord;
             var deferred = Ember.RSVP.defer();
             var successHandler = function(json) {
                 var deserializedJson = self.constructor.serializer.extractSingle(json, self.constructor, (creatingNewModel ? null : self.get('href')));
@@ -108,13 +110,13 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
                 });
             };
 
-            adapterFunc.call(Adapter, this.constructor, uri, data, function(json) {
+            adapterFunc.call(Adapter, this.constructor, uri, data, settings).then(function(json) {
                 successHandler(json);
                 deferred.resolve(self);
             }, function(response) {
                 self.ingestErrorResponse(response.responseJSON);
                 deferred.reject(self);
-            }, settings);
+            });
             return deferred.promise;
         }
         else {
@@ -130,6 +132,10 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
         var self = this;
         settings = settings || {};
 
+        Ember.Logger.debug('Model.delete:');
+        Ember.Logger.debug(this);
+        Ember.Logger.debug(this.get('uri'));
+
         this.setProperties({
             isDeleted: true,
             isSaving: true
@@ -138,7 +144,7 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
         this
             .constructor
             .getAdapter()
-            .delete(this.constructor, this.get('uri'), function(json) {
+            .deleteRecord(this.constructor, this.get('uri')).then(function(json) {
                 self.set('isSaving', false);
                 self.trigger('didDelete');
                 Model.Events.trigger('didDelete', self);
@@ -156,10 +162,12 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
 
         var promise = this.resolveOn('didLoad');
 
+        Ember.Logger.debug('Model.reload: uri=', this.get('uri'));
+
         this
             .constructor
             .getAdapter()
-            .get(this.constructor, this.get('uri'), function(json) {
+            .find(this.constructor, this.get('uri')).then(function(json) {
                 var deserializedJson = self.constructor.serializer.extractSingle(json, self.constructor, self.get('href'));
                 self._updateFromJson(deserializedJson);
                 self.set('isLoaded', true);
@@ -198,6 +206,31 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
         }
     },
 
+    getPojoProperties: function(pojo) {
+        return Ember.getProperties(pojo, Object.keys(pojo));
+    },
+    getProxiedProperties: function(proxyObject) {
+        // Three levels, first the content, then the prototype, then the properties of the instance itself
+        var contentProperties = this.getPojoProperties(proxyObject.get('content')),
+            prototypeProperties = Ember.getProperties(proxyObject, Object.keys(proxyObject.constructor.prototype)),
+            objectProperties = this.getPojoProperties(proxyObject);
+        return Ember.merge(Ember.merge(contentProperties, prototypeProperties), objectProperties);
+    },
+    getEmberObjectProperties: function(emberObject) {
+        var prototypeProperties = Ember.getProperties(emberObject, Object.keys(emberObject.constructor.prototype)),
+            objectProperties = this.getPojoProperties(emberObject);
+        return Ember.merge(prototypeProperties, objectProperties);
+    },
+    getProperties: function(object) {
+        if (object instanceof Ember.ObjectProxy) {
+            return this.getProxiedProperties(object);
+        } else if (object instanceof Ember.Object) {
+            return this.getEmberObjectProperties(object);
+        } else {
+            return this.getPojoProperties(object);
+        }
+    },
+
     _updateFromJson: function(json) {
         var self = this;
         if (!json) {
@@ -208,34 +241,45 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
             isNew: false
         };
         changes[JSON_PROPERTY_KEY] = json;
+        //changes['_type'] = this.type_plural;
 
-        //this.setProperties(changes);
+        //Ember.Logger.debug('_updateFromJson: JSON=', json);
 
-        Ember.Logger.debug('before Ember.changeProperties');
-        //Ember.changeProperties(function() {
+        this.setProperties(changes);
+
+        var class_props = this.getProperties(this.constructor.proto());
+        //Ember.Logger.debug('PROPS: ', class_props);
+
+        Ember.changeProperties(function() {
             for (var prop in json) {
-                //Ember.Logger.debug('property is: ', prop);
                 if (json.hasOwnProperty(prop)) {
-                    //Ember.Logger.debug('+++ try to assign');
+                    if (class_props[prop] || self[prop] instanceof Ember.ComputedProperty) {
+                        //Ember.Logger.debug('--> exclude property ', prop, json[prop]);//*/
+                        continue;
+                    }
+                    if ($.inArray(prop, PRIVATE_PROPERTIES) >= 0) {
+                        //Ember.Logger.debug('--> exclude private property ', prop, json[prop]);//*/
+                        continue;
+                    }
+                    if (prop === 'type') {
+                        self.set('_type', json[prop]);
+                        continue;
+                    }
+                    //Ember.Logger.debug('--> SET property ', prop, json[prop]);//*/
+
+                    //var desc = Ember.meta(self.constructor.proto(), false);
+                    //Ember.Logger.debug(desc);
+
+
+                    /*var desc = Ember.meta(self.constructor.proto(), false).descs[prop];
                     // don't override computed properties with raw json
-                    // https://github.com/emberjs/ember.js/pull/10323#issuecomment-90398533
-                    /*try {
-                        if (self[prop] instanceof Ember.ComputedProperty) {
-                            //Ember.Logger.debug('+++=== do assign');
-                            continue;
-                        }
-                    } catch (err) {
-                        Ember.Logger.debug(err);
+                    if (!(desc && desc instanceof Ember.ComputedProperty)) {
+                        self.set(prop, json[prop]);
                     }*/
-                    //self.set(prop, json[prop]);
-                    changes[prop] = json[prop];
-                    Ember.Logger.debug('prop['+prop+'] = '+json[prop]);
+                    self.set(prop, json[prop]);
                 }
             }
-        //});
-        Ember.Logger.debug(this);
-        this.setProperties(changes);
-        Ember.Logger.debug('after Ember.changeProperties');
+        });
 
         this.set('isLoaded', true);
         this.trigger('didLoad');
@@ -324,9 +368,10 @@ Model.reopenClass({
         return MbTestApp.__container__.lookup("adapter:main");
     },
 
-    serializer: Rev2Serializer.create(),
+    serializer: Rev1Serializer.create(),
 
     find: function(uri, settings) {
+        Ember.Logger.debug('Model.find: uri=', uri);
         var modelClass = this;
         var modelObject = modelClass.create({
             uri: uri
@@ -339,9 +384,12 @@ Model.reopenClass({
 
         this
             .getAdapter()
-            .get(modelClass, uri, function(json) {
+            .find(modelClass, uri).then(function(json) {
+                Ember.Logger.debug('Model.find: json=', json);
                 modelObject.populateFromJsonResponse(json, uri);
             }, $.proxy(modelObject._handleError, modelObject));
+
+        //Ember.Logger.debug('modelObject:', modelObject);
 
         return modelObject;
     },
@@ -413,7 +461,9 @@ Model.reopenClass({
 
             if (embeddedPropertyValue) {
                 if (!embeddedPropertyValue._type) {
-                    embeddedPropertyValue = typeClass.serializer.extractSingle(embeddedPropertyValue, typeClass) || embeddedPropertyValue;
+                    var response_like = {};
+                    response_like[embeddedPropertyValue.type] = [embeddedPropertyValue];
+                    embeddedPropertyValue = typeClass.serializer.extractSingle(response_like, typeClass) || embeddedPropertyValue;
                 }
 
                 var embeddedObj = typeClass._materializeLoadedObjectFromAPIResult(embeddedPropertyValue);
@@ -526,8 +576,8 @@ Model.reopenClass({
         typedObj._updateFromJson(json);
         typedObj.trigger('didLoad');
 
-        Ember.Logger.debug('typedObj: ', typedObj.title);
-        Ember.Logger.debug(typedObj);
+        //Ember.Logger.debug('typedObj: ');
+        //Ember.Logger.debug(typedObj);
 
         return typedObj;
     },

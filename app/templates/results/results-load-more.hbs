@@ -2,7 +2,8 @@
     <td {{bind-attr colspan=view.columns}}>
         {{#if view.results.loadingNextPage}}
             <div class="loader-container">
-                <span class="loader loading"></span>
+                {{!--<span class="loader loading"></span>--}}
+                <i class="fa fa-spin fa-spinner"></i>
             </div>
         {{else}} {{#if view.results.hasNextPage}}
             <a class="btn secondary" {{action "loadMore" view.results target=view}}>Load more</a>

@@ -53,14 +53,12 @@ export default Ember.Object.extend({
                 isLoaded: true
             });
         } else {
-            /*var searchArray = SearchModelArray.newArrayLoadedFromUri(uri, type);
+            var searchArray = SearchModelArray.newArrayLoadedFromUri(uri, type);
             searchArray.setProperties({
                 sortProperties: [this.get('sortField') || 'created_at'],
                 sortAscending: this.get('sortDirection') === 'asc'
             });
-            return searchArray;*/
-            var store = MbTestApp.__container__.lookup("store:main");
-            return store.find('server', { node_id: 1 });
+            return searchArray;
         }
     }.property("resultsUri", "resultsType", "sortField", "sortDirection"),
 

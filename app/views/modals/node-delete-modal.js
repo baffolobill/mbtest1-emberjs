@@ -22,9 +22,9 @@ var NodeDeleteModalView = ModalBaseView.extend(DeleteMixin, {
 
 NodeDeleteModalView.reopenClass({
     open: function(model) {
-        var modal = this.create();
-        modal.set('model', model);
-        return modal;
+        return this.create({
+            model: model
+        });
     }
 });
 

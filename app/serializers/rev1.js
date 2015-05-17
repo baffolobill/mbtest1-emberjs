@@ -1,28 +1,32 @@
-import Ember from "ember";
-
 var JSON_PROPERTY_KEY = '__json';
 var LINKS_PROPERTY_KEY = '__links';
 var EMBEDDED_DATA_PROPERTY_KEY = '__embedded';
 
 var Rev1Serializer = Ember.Object.extend({
     //  properties which are not echoed back to the server
-    privateProperties: ['id', 'uri', 'validationErrors', JSON_PROPERTY_KEY, LINKS_PROPERTY_KEY, EMBEDDED_DATA_PROPERTY_KEY, '_type'],
+    privateProperties: ['id', 'uri', 'validationErrors', JSON_PROPERTY_KEY, LINKS_PROPERTY_KEY, EMBEDDED_DATA_PROPERTY_KEY, '_type', 'links'],
 
     serialize: function(record) {
-        var json = this._propertiesMap(record);
+        Ember.Logger.debug('Rev1Serializer.serialize:', record);
+        var attributes = this._propertiesMap(record);
+        var json = {};
+        json[record.get('type_plural')] = attributes;
         return json;
     },
 
     extractSingle: function(rootJson, href) {
-        var modelObj;
+        var modelObj, modelObjNew;
         var objType;
 
-        var objTypes = _.keys(_.omit(rootJson, "links", "meta", "errors"));
+        Ember.Logger.debug('extractSingle: rootJson=', rootJson);
+
+        var objTypes = _.keys(_.omit(rootJson, "included", "links", "meta", "errors"));
         if (objTypes.length === 0) {
             return null;
         }
 
         if (objTypes.length > 1) {
+            Ember.Logger.debug('extractSingle: objTypes=', objTypes);
             Ember.warn("Got more than we bargained for in extractSingle");
         }
 
@@ -32,19 +36,27 @@ var Rev1Serializer = Ember.Object.extend({
 
         // Hack to make it serialize as rev0 just in case.
         if (!modelObj) {
-            modelObj = rootJson;
+            modelObj = rootJson[objType];
+            //modelObj = rootJson;
         }
 
-        this._populateObject(modelObj, objType, rootJson);
+        modelObjNew = {};
+        for (var k in modelObj) {
+            modelObjNew[k] = modelObj[k];
+        }
 
-        return modelObj;
+
+        this._populateObject(modelObjNew, objType, rootJson);
+        Ember.Logger.debug('modelObjNew:', modelObjNew);
+
+        return modelObjNew;
     },
 
     extractCollection: function(rootJson) {
         var collection = [];
         var self = this;
 
-        var populateFunc = function(val) {
+        /*var populateFunc = function(val) {
             collection.push(self._populateObject(val, typeName, rootJson));
         };
         for (var typeName in rootJson) {
@@ -52,10 +64,14 @@ var Rev1Serializer = Ember.Object.extend({
             if ($.isArray(vals)) {
                 _.each(vals, populateFunc);
             }
-        }
+        }*/
+        rootJson['data'].forEach(function(rec, index){
+            collection.push(self._populateObject(rec, rec['type'], rootJson));
+        });
 
         var linked = rootJson.linked ? rootJson.linked : null;
-        var nextUri = rootJson.meta ? rootJson.meta.next : null;
+        //var nextUri = rootJson.meta ? rootJson.meta.next : null;
+        var nextUri = rootJson.links ? rootJson.links.next : null;
         var counts = rootJson.meta ? rootJson.meta.counts : null;
         var total = rootJson.meta ? rootJson.meta.total : null;
 
@@ -76,6 +92,28 @@ var Rev1Serializer = Ember.Object.extend({
         if (modelObj.links) {
             for (var key in modelObj.links) {
                 linksValues[objType + '.' + key] = modelObj.links[key];
+
+                //dirty hack
+                if (rootJson['included']) {
+                    var embedded_value = null;
+                    for (var i=0, l=rootJson['included'].length; i<l; i++) {
+                        var val = rootJson['included'][i];
+                        var included_key = null;
+                        for (var link in rootJson['links']) {
+                            var link_type = link.split('.');
+                            if (link_type[link_type.length-1] == key) {
+                                included_key = rootJson['links'][link]['type'];
+                            }
+                        }
+                        //var link = rootJson['links'][objType+'.'+key];
+                        //var included_key = link && link['type'];
+                        if (included_key === val['type'] && modelObj.links[key] == val['id']) {
+                            embedded_value = val;
+                            break;
+                        }
+                    }
+                    modelObj[key] = embedded_value;
+                }
             }
         }
 
@@ -100,6 +138,10 @@ var Rev1Serializer = Ember.Object.extend({
             if (link.indexOf(objPropertyName + ".") === 0) {
                 var linkName = link.substring(objPropertyName.length + 1);
 
+                if (linkName.indexOf('.') !== -1) {
+                    continue;
+                }
+
                 // Template all the links
                 var href = rootJson.links[link];
 
@@ -117,7 +159,7 @@ var Rev1Serializer = Ember.Object.extend({
         }
 
         modelObj.uri = modelObj.href;
-        modelObj._type = objType.replace(/s$/, '');
+        modelObj._type = objType;//.replace(/s$/, '');
         return modelObj;
     },
 

@@ -1,7 +1,7 @@
 import Ember from "ember";
 
 var getRootErrorMessages = function(model) {
-  var messages = model.get("errors");// || model.get("validationErrors.messages");
+  var messages = model.get("errors._root") || model.get("validationErrors.messages");
   return Ember.A(messages);
 };
 
@@ -44,10 +44,7 @@ export default Ember.Mixin.create({
   },
   "delete": function(model) {
     return this.executeAction(function() {
-      //Ember.Logger.debug('object-action-mixin->delete:');
-      //Ember.Logger.debug(model);
-      //return model["delete"]();
-      return model.destroyRecord();
+      return model["delete"]();
     });
   },
   validateAndSaveModel: function() {
@@ -58,8 +55,8 @@ export default Ember.Mixin.create({
   },
   save: function(model) {
     return this.executeAction(function() {
-      if (model.get("errors")) {
-        model.get("errors").clear();
+      if (model.get("validationErrors")) {
+        model.get("validationErrors").clear();
       }
       return model.save();
     });

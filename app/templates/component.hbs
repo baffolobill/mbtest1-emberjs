@@ -1,0 +1,14 @@
+{{view "page-navigations/page-navigation" pageType="Component" title=model.name}}
+
+{{#view "detail-views/body-panel"}}
+    {{#view "detail-views/api-model-panel" model=model}}
+        {{view "detail-views/description-lists/component-titled-key-values-section" model=model}}
+    {{/view}}
+
+    {{#view "detail-views/main-panel"}}
+        <h3>Property List</h3>
+        <div class="results">
+            {{view "results/component-properties-table" loader=propertiesResultsLoader}}
+        </div>
+    {{/view}}
+{{/view}}

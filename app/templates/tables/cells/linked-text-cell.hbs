@@ -1,3 +1,4 @@
+{{#if view.item}}
 {{#link-to view.routeName view.item}}
     <span {{bind-attr class="view.isBlank:sl-none view.spanClassNames"}}>
     {{#if view.isStatusCell}}
@@ -7,3 +8,6 @@
     {{/if}}
     </span>
 {{/link-to}}
+{{else}}
+<span>---</span>
+{{/if}}

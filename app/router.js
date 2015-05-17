@@ -7,10 +7,7 @@ var Router = Ember.Router.extend({
 
 export default Router.map(function() {
   this.route('nodes', { path: '/nodes' });
-  this.route('node.create', { path: '/nodes/create' });
-  this.route('node', { path: '/nodes/:node_id' }, function(){
-    this.route('server', { path: '/nodes/:node_id/servers' });
-  });
+  this.route('node', { path: '/nodes/:node_id' });
 
   this.route('racks', { path: '/racks' });
   this.route('rack', { path: '/racks/:rack_id' });
@@ -29,4 +26,10 @@ export default Router.map(function() {
 
   this.route('baskets', { path: '/baskets' });
   this.route('basket', { path: '/baskets/:basket_id' });
+
+  this.route('servertemplates', { path: '/servertemplates' });
+  this.route('servertemplate', { path: '/servertemplates/:servertemplate_id' });
+
+  this.route('components', { path: '/components' });
+  this.route('component', { path: '/components/:component_id' });
 });

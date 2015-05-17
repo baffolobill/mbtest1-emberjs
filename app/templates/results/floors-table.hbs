@@ -1,0 +1,31 @@
+<thead>
+    <tr>
+        <th class="col-xs-1"><span>ID</span></th>
+        <th><span>Name</span></th>
+        <th><span>Node</span></th>
+    </tr>
+</thead>
+
+{{#if view.loader.results.hasNextPage}}
+    {{view "results/results-load-more" results=view.loader.results columns=3}}
+{{/if}}
+
+<tbody>
+    {{#each floor in view.loader.results}}
+        <tr>
+            <td>{{floor.id}}</td>
+            {{view "tables/cells/titled-linked-cell" routeName="floor" item=floor labelText=floor.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="node" item=floor.json_node.id labelText=floor.node_name}}
+        </tr>
+    {{else}}
+        <tr>
+            <td colspan="3" class="no-results">
+                {{#if view.loader.results.isLoaded}}
+                    No Floors
+                {{else}}
+                    Loading...
+                {{/if}}
+            </td>
+        </tr>
+    {{/each}}
+</tbody>

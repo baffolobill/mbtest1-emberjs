@@ -1,6 +1,6 @@
 import Ember from "ember";
-import DS from "ember-data";
-//import LoadPromise from "./mixins/load-promise";
+//import DS from "ember-data";
+import LoadPromise from "./mixins/load-promise";
 import TypeMappings from "./type-mappings";
 import {
   _bind,
@@ -17,11 +17,7 @@ var getAdapter = function() {
     return MbTestApp.__container__.lookup("adapter:main");
 };
 
-var getStore = function() {
-    return MbTestApp.__container__.lookup("store:main");
-};
-
-var ModelArray = Ember.ArrayProxy.extend({
+var ModelArray = Ember.ArrayProxy.extend(LoadPromise, {
     hasNextPage: false,
     loadingNextPage: false,
 
@@ -33,7 +29,7 @@ var ModelArray = Ember.ArrayProxy.extend({
 
         if (this.get('hasNextPage')) {
             var typeClass = this.get('typeClass');
-            getAdapter().get(typeClass, this.get('next_uri'), function(json) {
+            getAdapter().find(typeClass, this.get('next_uri')).then(function(json) {
                 var deserializedJson = typeClass.serializer.extractCollection(json);
                 self._populateModels(deserializedJson);
                 self.set('loadingNextPage', false);
@@ -71,7 +67,7 @@ var ModelArray = Ember.ArrayProxy.extend({
         this.set('isLoaded', false);
         var typeClass = this.get('typeClass');
 
-        getAdapter().get(this.constructor, this.get('uri'), function(json) {
+        getAdapter().find(this.constructor, this.get('uri')).then(function(json) {
             // todo, maybe we should go through and reload each item rather
             // than nuking and re-adding
             self.clear();
@@ -186,7 +182,7 @@ ModelArray.reopenClass({
         var typeClass = TypeMappings.typeClass(defaultType);
         var modelObjectsArray = this.create({
             content: Ember.A(),
-            type: typeClass,
+            typeClass: typeClass,
             uri: uri
         });
 
@@ -195,17 +191,15 @@ ModelArray.reopenClass({
             return modelObjectsArray;
         }
         modelObjectsArray.set('isLoaded', false);
-
-        modelObjectsArray._findAll(getAdapter(), getStore(), typeClass, uri);
-
-        /*getAdapter().find(modelObjectsArray.store, typeClass, uri).then(function(json) {
-            var deserializedJson = Rev2Serializer.extractArray(json);
-            Ember.Logger.debug('deserializedJson: ');
-            Ember.Logger.debug(deserializedJson);
+        getAdapter().find(typeClass, uri).then(function(json) {
+            var deserializedJson = typeClass.serializer.extractCollection(json);
+            //Ember.Logger.debug('deserializedJson: ');
+            //Ember.Logger.debug(deserializedJson);
             modelObjectsArray._populateModels(deserializedJson);
-        }).catch(function(jqXHR, textStatus, errorThrown) {
+        }, function(jqXHR, textStatus, errorThrown) {
+            //Ember.Logger.debug(arguments);
             modelObjectsArray._handleError(jqXHR, textStatus, errorThrown);
-        });*/
+        });//*/
 
         return modelObjectsArray;
     },
@@ -214,7 +208,7 @@ ModelArray.reopenClass({
         var typeClass = TypeMappings.typeClass(defaultType);
         var modelObjectsArray = this.create({
             content: Ember.A(),
-            type: typeClass,
+            typeClass: typeClass,
             uri: null
         });
 
@@ -222,19 +216,8 @@ ModelArray.reopenClass({
             return modelObjectsArray;
         }
 
-        var adapter = getAdapter();
-        var store = getStore();
-        var serializer = serializerForAdapter(store, adapter, typeClass);
-        store._adapterRun(function(){
-            var payload = serializer.extract(store, typeClass, json, null, 'newArrayCreatedFromJson');
-            payload.forEach(function(data) {
-                self.addObject(store.push(type, store.normalize(type, data)));
-            });
-        });
-        store.didUpdateAll(typeClass);
-        //modelObjectsArray.addObjects(store.all(typeClass));
-        //var deserializedJson = typeClass.serializer.extractCollection(json);
-        //modelObjectsArray._populateModels(deserializedJson);
+        var deserializedJson = typeClass.serializer.extractCollection(json);
+        modelObjectsArray._populateModels(deserializedJson);
 
         return modelObjectsArray;
     }

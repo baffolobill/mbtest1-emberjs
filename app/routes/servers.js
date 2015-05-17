@@ -1,7 +1,10 @@
-import Ember from 'ember';
+import TitleRoute from "./title";
+import Server from "../models/server";
 
-export default Ember.Route.extend({
-    model: function() {
-        return this.store.find('server');
+export default TitleRoute.extend({
+    title: 'Server List',
+    model: function(params) {
+        var instance = Server.create();
+        return instance.getResultsLoader();
     }
 });

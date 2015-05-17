@@ -1,0 +1,14 @@
+{{view "page-navigations/page-navigation" pageType="Server" title=model.name}}
+
+{{#view "detail-views/body-panel"}}
+    {{#view "detail-views/api-model-panel" model=model}}
+        {{view "detail-views/description-lists/server-titled-key-values-section" model=model}}
+    {{/view}}
+
+    {{#view "detail-views/main-panel"}}
+        <h3>Component List</h3>
+        <div class="results">
+            {{view "results/server-components-table" loader=componentsResultsLoader}}
+        </div>
+    {{/view}}
+{{/view}}

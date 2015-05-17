@@ -1,0 +1,19 @@
+{{#view "form-fields/form-section" model=view.model sectionTitle="Room information"}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Name"
+        field="name"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.floorsForSelect
+        value=view.parentView.selectedFloor
+        labelText="Floor"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="floor"
+        field="floor"
+    }}
+{{/view}}
+

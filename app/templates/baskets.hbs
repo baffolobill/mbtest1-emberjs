@@ -1,1 +1,13 @@
-{{outlet}}
+{{#view "page-navigations/page-navigation" title="Basket List"}}
+  <div class="buttons page-actions">
+    <a class="btn" {{action "openModal" "modals/basket-add-modal"}}>Add a basket</a>
+  </div>
+{{/view}}
+
+<nav class="results-actions-bar"></nav>
+
+<div class="results">
+  <div class="items-wrapper">
+    {{view "results/baskets-table" loader=resultsLoader}}
+  </div>
+</div>

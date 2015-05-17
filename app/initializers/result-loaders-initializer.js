@@ -1,4 +1,6 @@
-var LOADER_NAMES = ["base", "nodes", "servers"];
+var LOADER_NAMES = ["base", "nodes", "servers", "floors", "rooms", "rows",
+                    "racks", "baskets", "servertemplates", "components",
+                    "properties", "propertyoptions"];
 
 export default {
   name: "resultLoaders",

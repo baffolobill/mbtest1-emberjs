@@ -1,0 +1,41 @@
+<thead>
+    <tr>
+        <th class="col-xs-1"><span>ID</span></th>
+        <th><span>Name</span></th>
+        <th><span>Template</span></th>
+        <th><span>Rack</span></th>
+        <th><span>Row</span></th>
+        <th><span>Room</span></th>
+        <th><span>Floor</span></th>
+        <th><span>Node</span></th>
+    </tr>
+</thead>
+
+{{#if view.loader.results.hasNextPage}}
+    {{view "results/results-load-more" results=view.loader.results columns=8}}
+{{/if}}
+
+<tbody>
+    {{#each result in view.loader.results}}
+        <tr>
+            <td>{{result.id}}</td>
+            {{view "tables/cells/titled-linked-cell" routeName="server" item=result labelText=result.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="servertemplate" item=result.json_template.id labelText=result.json_template.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="rack" item=result.json_rack.id labelText=result.json_rack.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="row" item=result.json_row.id labelText=result.json_row.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="room" item=result.json_room.id labelText=result.json_room.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="floor" item=result.json_floor.id labelText=result.json_floor.name}}
+            {{view "tables/cells/titled-linked-cell" routeName="node" item=result.json_node.id labelText=result.json_node.name}}
+        </tr>
+    {{else}}
+        <tr>
+            <td colspan="8" class="no-results">
+                {{#if view.loader.results.isLoaded}}
+                    No Servers
+                {{else}}
+                    Loading...
+                {{/if}}
+            </td>
+        </tr>
+    {{/each}}
+</tbody>

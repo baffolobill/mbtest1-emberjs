@@ -1,0 +1,9 @@
+<form {{action "save" view.model target="view" on="submit"}}>
+    <div class="modal-body modal-info">
+        <div class="content">
+            <p>Are you sure you want to delete this basket?</p>
+        </div>
+    </div>
+
+    {{view "modals/modal-base-footer" isSaving=view.isSaving submitButtonText="Delete"}}
+</form>

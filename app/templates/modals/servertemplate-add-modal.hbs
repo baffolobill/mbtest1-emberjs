@@ -1,0 +1,87 @@
+{{#view "form-fields/form-section" model=view.model}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Name"
+        field="name"
+        name="name"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Unit takes"
+        field="unit_takes"
+        name="unit_takes"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.cpuSocketsForSelect
+        value=view.parentView.selectedCPUSocket
+        labelText="CPU Socket"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="cpu_socket"
+        field="cpu_socket"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="CPU Quantity"
+        field="cpu_qty"
+        name="cpu_qty"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.ramStandardsForSelect
+        value=view.parentView.selectedRAMStandard
+        labelText="RAM Standard"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="ram_standard"
+        field="ram_standard"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="RAM Quantity"
+        field="ram_qty"
+        name="ram_qty"
+    }}
+
+    <div class="hdds clearfix">
+        {{#each hdd in view.model.hdds}}
+        <div class="hdd-row clearfix" style="background:#e6e6e6;padding:6px;margin:6px 0px;">
+        {{view "form-fields/select-form-field"
+            model=view.model
+            content=view.parentView.hddFormFactorsForSelect
+            value=view.parentView.selectedHDDFormFactor
+            labelText="HDD Form Factor"
+            optionValuePath="content.value"
+            optionLabelPath="content.label"
+            name="hdd_form_factor"
+            field="hdd_form_factor"
+        }}
+        {{view "form-fields/select-form-field"
+            model=view.model
+            content=view.parentView.hddConnectionTypeForSelect
+            value=view.parentView.selectedHDDConnectionType
+            labelText="HDD Connection Type"
+            optionValuePath="content.value"
+            optionLabelPath="content.label"
+            name="hdd_connection_type"
+            field="hdd_connection_type"
+        }}
+        {{view "form-fields/text-form-field"
+            model=view.model
+            labelText="HDD Qty"
+            field="hdd_qty"
+            name="hdd_qty"
+        }}
+        </div>
+        {{/each}}
+        <div class="clearfix">
+            <button {{action "addHdd" on="click" target=view.parentView}}>Add HDD</button>
+        </div>
+    </div>
+{{/view}}

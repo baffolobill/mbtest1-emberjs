@@ -1,3 +1,3 @@
-import Rev2 from "./rev2";
+import Rev1 from "./rev1";
 
-export default Rev2;
+export default Rev1;

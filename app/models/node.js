@@ -1,21 +1,10 @@
-import DS from 'ember-data';
-//import Model from './core/model';
-import EmberValidations from 'ember-validations';
+//import DS from 'ember-data';
+import Ember from "ember";
+import Model from './core/model';
+import { generateResultsLoader } from "../utils/model";
 
-var getResultsLoader = function(loaderClassName, attributes) {
-    return MbTestApp.__container__.lookupFactory("results-loader:" + loaderClassName).create(attributes);
-};
 
-var generateResultsLoader = function(loaderClassName, uriFieldName) {
-    return function(attributes) {
-        attributes = _.extend({
-            path: this.get(uriFieldName)
-        }, attributes);
-        return getResultsLoader(loaderClassName, attributes);
-    };
-};
-
-var Node = DS.Model.extend(EmberValidations, {
+var Node = Model.extend(Ember.Validations, {
     validations: {
         name: {
             presence: true
@@ -28,9 +17,10 @@ var Node = DS.Model.extend(EmberValidations, {
     uri: '/nodes',
     route_name: 'nodes',
     type_name: 'Node',
+    type_plural: 'Nodes',
 
-    name: DS.attr('string'),
-    address: DS.attr('string'),
+    //name: DS.attr('string'),
+    //address: DS.attr('string'),
 
     //floors: DS.hasMany('floor', { async: true }),
     //racks: DS.hasMany('rack', { async: true }),
@@ -40,11 +30,14 @@ var Node = DS.Model.extend(EmberValidations, {
         return this.get('servers').get('length');
     }.property('servers'),*/
 
+    servers: Model.hasMany('servers', 'server'),
+
 
     getServersLoader: generateResultsLoader("servers", "servers_uri"),
+    getResultsLoader: generateResultsLoader("nodes", "uri"),
 
     servers_uri: function() {
-        return this.get('uri')+'/'+this.get('id')+'/servers';
+        return '/nodes/'+this.get('id')+'/servers';
     }.property('uri', 'id'),
 });
 

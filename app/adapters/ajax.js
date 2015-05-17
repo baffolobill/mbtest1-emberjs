@@ -23,53 +23,95 @@ export default BaseAdapter.extend({
         return uri;
     },
 
-    find: function(store, type, id, snapshot) {
+    find: function(type, id, snapshot) {
         var uri;
         if (id && String(id).charAt(0) === '/') {
             uri = this.completeURL(this._uri(type, id.substr(1)));
         } else {
-            uri = this.buildURL(type.typeKey, id, snapshot);
+            uri = this.completeURL(this._uri(type, id));
+            //uri = this.buildURL(type.typeKey, id, snapshot);
         }
         return this.ajax(uri, 'GET');
     },
+
+    findAll: function(type, sinceToken) {
+        var query;
+
+        if (sinceToken) {
+            query = { since: sinceToken };
+        }
+
+        return this.ajax(this.buildURL(type.typeKey), 'GET', { data: query });
+    },
+
+    createRecord: function(type, uri, data, settings) {
+        settings = settings || {};
+        settings.data = data;
+        if (uri && String(uri).charAt(0) === '/') {
+            uri = uri.substr(1);
+        }
+        uri = this.completeURL(this._uri(type, uri));
+        return this.ajax(uri, 'POST', settings);
+    },
+
+    updateRecord: function(type, uri, data, settings) {
+        settings = settings || {};
+        settings.data = data;
+        if (uri && String(uri).charAt(0) === '/') {
+            uri = uri.substr(1);
+        }
+        Ember.Logger.debug('Adapter.updateRecord:', settings.data);
+        uri = this.completeURL(this._uri(type, uri));
+        return this.ajax(uri, 'PUT', settings);
+    },
+
+    deleteRecord: function(type, uri, settings) {
+        settings = settings || {};
+        if (uri && String(uri).charAt(0) === '/') {
+            uri = uri.substr(1);
+        }
+        uri = this.completeURL(this._uri(type, uri));
+        return this.ajax(uri, 'DELETE', settings);
+    },
+
     /*get: function(type, uri, success, error) {
         var settings = {};
         settings.error = error;
         return this.ajax(this._uri(type, uri), 'GET', settings).then(function(json) {
             success(json);
         });
-    },
+    },//*/
 
     //createRecord: function(store, type, uri, snapshot) {
-    create: function(type, uri, data, success, error, settings) {
+    /*create: function(type, uri, data, success, error, settings) {
         settings = settings || {};
         settings.data = data;
         settings.error = error;
         this.ajax(this._uri(type, uri), 'POST', settings).then(function(json) {
             success(json);
         });
-    },
+    },//*/
 
     //updateRecord: function(store, type, uri, snapshot) {
-    update: function(type, uri, data, success, error, settings) {
+    /*update: function(type, uri, data, success, error, settings) {
         settings = settings || {};
         settings.data = data;
         settings.error = error;
         this.ajax(this._uri(type, uri), 'PUT', settings).then(function(json) {
             success(json);
         });
-    },
+    },//*/
 
     //deleteRecord: function(store, type, uri, snapshot) {
-    delete: function(type, uri, success, error, settings) {
+    /*delete: function(type, uri, success, error, settings) {
         settings = settings || {};
         settings.error = error;
         this.ajax(this._uri(type, uri), 'DELETE', settings).then(function(json) {
             success(json);
         });
-    },
+    },//*/
 
-    ajax: function(url, type, settings) {
+    /*ajax: function(url, type, settings) {
         settings = settings || {};
         settings.url = url;
         settings.type = type;
@@ -124,4 +166,73 @@ export default BaseAdapter.extend({
         jQuery.ajax(settings).then(deferred.resolve, deferred.reject);
         return deferred.promise;
     },*/
+
+    ajaxError: function(jqXHR, responseText, errorThrown) {
+        var isObject = jqXHR !== null && typeof jqXHR === 'object';
+
+        if (isObject) {
+            jqXHR.then = null;
+            if (!jqXHR.errorThrown) {
+                if (typeof errorThrown === 'string') {
+                    jqXHR.errorThrown = new Error(errorThrown);
+                } else {
+                    jqXHR.errorThrown = errorThrown;
+                }
+            }
+        }
+
+        return jqXHR;
+    },
+
+    ajaxSuccess: function(jqXHR, jsonPayload) {
+        return jsonPayload;
+    },
+
+    ajax: function(url, type, options) {
+        var adapter = this;
+
+        return new Ember.RSVP.Promise(function(resolve, reject) {
+            var hash = adapter.ajaxOptions(url, type, options);
+
+            hash.success = function(json, textStatus, jqXHR) {
+                json = adapter.ajaxSuccess(jqXHR, json);
+                //if (json instanceof InvalidError) {
+                //    Ember.run(null, reject, json);
+                //} else {
+                    Ember.run(null, resolve, json);
+                //}
+            };
+
+            hash.error = function(jqXHR, textStatus, errorThrown) {
+                Ember.run(null, reject, adapter.ajaxError(jqXHR, jqXHR.responseText, errorThrown));
+            };
+            Ember.Logger.debug('Adapter.ajax:', hash);
+            Ember.$.ajax(hash);
+        }, '_: BaseAdapter#ajax ' + type + ' to ' + url);
+    },
+
+    ajaxOptions: function(url, type, options) {
+        var hash = options || {};
+        hash.url = url;
+        hash.type = type;
+        hash.dataType = 'json';
+        hash.context = this;
+
+        if (hash.data && type !== 'GET') {
+            //hash.contentType = 'application/json; charset=utf-8';
+            hash.contentType = 'application/vnd.api+json; charset=utf-8';
+            hash.data = JSON.stringify(hash.data);
+        }
+
+        var headers = Ember.get(this, 'headers');
+        if (headers !== undefined) {
+            hash.beforeSend = function (xhr) {
+                forEach.call(Ember.keys(headers), function(key) {
+                    xhr.setRequestHeader(key, headers[key]);
+                });
+            };
+        }
+
+        return hash;
+    }
 });

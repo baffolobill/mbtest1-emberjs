@@ -1,7 +1,10 @@
-import Ember from 'ember';
+import TitleRoute from "./title";
+import Floor from "../models/floor";
 
-export default Ember.Route.extend({
-    model: function() {
-        return this.store.find('floor');
+export default TitleRoute.extend({
+    title: 'Floor List',
+    model: function(params) {
+        var instance = Floor.create();
+        return instance.getResultsLoader();
     }
 });

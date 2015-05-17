@@ -1,0 +1,19 @@
+{{#view "form-fields/form-section" model=view.model}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Name"
+        field="name"
+        name="name"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.templatesForSelect
+        value=view.parentView.selectedTemplate
+        labelText="Server template"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="template"
+        field="template"
+    }}
+{{/view}}

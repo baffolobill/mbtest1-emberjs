@@ -1,0 +1,21 @@
+<thead>
+    <tr>
+        <th class="col-xs-4"><span>Title</span></th>
+        <th class="col-xs-8"><span>Value</span></th>
+    </tr>
+</thead>
+
+<tbody>
+    {{#each prop in view.loader.results}}
+    <tr>
+        <td><span>{{prop.title}}</span></td>
+        <td><span>{{prop.value}}</span></td>
+    </tr>
+    {{else}}
+        <tr>
+            <td colspan="2" class="no-results">
+                <span>No properties</span>
+            </td>
+        </tr>
+    {{/each}}
+</tbody>

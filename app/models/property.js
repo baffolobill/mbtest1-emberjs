@@ -1,13 +1,22 @@
-import DS from 'ember-data';
+import Ember from "ember";
+import Model from './core/model';
+import { generateResultsLoader } from "../utils/model";
 
-export default DS.Model.extend({
-  name: DS.attr('string'),
-  title: DS.attr('string'),
-  groups: DS.hasMany('property-group'),
-  components: DS.hasMany('component'),
-  position: DS.attr('number'),
-  unit: DS.attr('string'),
-  type: DS.attr('number'),
-  required: DS.attr('boolean'),
-  options: DS.hasMany('property-option')
+export default Model.extend(Ember.Validations, {
+    validations: {
+        name: {
+            presence: true
+        }
+    },
+
+    uri: '/properties',
+    route_name: 'properties',
+    type_name: 'Property',
+    type_plural: 'Properties',
+
+    getOptionsLoader: generateResultsLoader("propertyoptions", "options_uri"),
+
+    options_uri: function() {
+        return this.get('uri')+'/options';
+    }.property('uri'),
 });

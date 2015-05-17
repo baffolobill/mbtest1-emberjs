@@ -4,7 +4,7 @@ import ListValueGenerator from "./list-value-generator";
 export default TitledKeyValuesSectionView.extend({
     title: "Node information",
     editModelModalClass: function() {
-        return this.get("container").lookupFactory("view:modals/edit-node-detail-modal");
+        return this.get("container").lookupFactory("view:modals/node-update-modal");
     }.property("model"),
 
     deleteModelModalClass: function() {

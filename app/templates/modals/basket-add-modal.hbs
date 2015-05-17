@@ -1,0 +1,34 @@
+{{#view "form-fields/form-section" model=view.model}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Name"
+        field="name"
+        name="name"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Height in units"
+        field="unit_takes"
+        name="unit_takes"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        labelText="Total slots Qty"
+        field="slot_qty"
+        name="slot_qty"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.racksForSelect
+        value=view.parentView.selectedRack
+        labelText="Rack"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="rack"
+        field="rack"
+        prompt="---"
+    }}
+{{/view}}

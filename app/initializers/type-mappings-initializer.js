@@ -7,7 +7,17 @@ export default {
       var klass = container.lookupFactory("model:" + (factoryName || key));
       return TypeMappings.addTypeMapping(key, klass);
     };
-    registerMapping("node");
-    registerMapping("server");
+    registerMapping("Nodes", "node");
+    registerMapping("Servers", "server");
+    registerMapping("Baskets", "basket");
+    registerMapping("Racks", "rack");
+    registerMapping("Rows", "row");
+    registerMapping("Rooms", "room");
+    registerMapping("Floors", "floor");
+    registerMapping("Components", "component");
+    registerMapping("ServerTemplates", "servertemplate");
+    registerMapping("Server Templates", "servertemplate");
+    registerMapping("Properties", "property");
+    registerMapping("PropertyOptions", "propertyoption");
   }
 };

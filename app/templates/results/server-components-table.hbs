@@ -1,0 +1,21 @@
+<thead>
+    <tr>
+        <th class="col-xs-1"><span>ID</span></th>
+        <th><span>Name</span></th>
+    </tr>
+</thead>
+
+<tbody>
+    {{#each component in view.loader.results}}
+    <tr>
+        <td>{{component.id}}</td>
+        {{view "tables/cells/titled-linked-cell" routeName="component" item=component labelText=component.name}}
+    </tr>
+    {{else}}
+        <tr>
+            <td colspan="2" class="no-results">
+                <span>No components</span>
+            </td>
+        </tr>
+    {{/each}}
+</tbody>

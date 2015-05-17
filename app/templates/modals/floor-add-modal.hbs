@@ -1,0 +1,20 @@
+{{#view "form-fields/form-section" model=view.model}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        inputClassNames="full"
+        labelText="Name"
+        field="name"
+        name="name"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.nodesForSelect
+        value=view.model.node
+        labelText="Node"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="node"
+        field="node"
+    }}
+{{/view}}

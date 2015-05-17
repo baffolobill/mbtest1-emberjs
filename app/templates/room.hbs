@@ -1,0 +1,14 @@
+{{view "page-navigations/page-navigation" pageType="Room" title=model.name}}
+
+{{#view "detail-views/body-panel"}}
+    {{#view "detail-views/api-model-panel" model=model}}
+        {{view "detail-views/description-lists/room-titled-key-values-section" model=model}}
+    {{/view}}
+
+    {{#view "detail-views/main-panel"}}
+        <h3>Server List</h3>
+        <div class="results">
+            {{view "results/node-servers-table" loader=serversResultsLoader}}
+        </div>
+    {{/view}}
+{{/view}}

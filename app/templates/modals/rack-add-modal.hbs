@@ -1,0 +1,28 @@
+{{#view "form-fields/form-section" model=view.model}}
+    {{view "form-fields/text-form-field"
+        model=view.model
+        inputClassNames="full"
+        labelText="Name"
+        field="name"
+        name="name"
+    }}
+
+    {{view "form-fields/text-form-field"
+        model=view.model
+        inputClassNames="full"
+        labelText="Total units"
+        field="total_units"
+        name="total_units"
+    }}
+
+    {{view "form-fields/select-form-field"
+        model=view.model
+        content=view.parentView.rowsForSelect
+        value=view.parentView.selectedRow
+        labelText="Row"
+        optionValuePath="content.value"
+        optionLabelPath="content.label"
+        name="row"
+        field="row"
+    }}
+{{/view}}
