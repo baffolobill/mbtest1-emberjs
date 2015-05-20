@@ -276,7 +276,20 @@ var Model = Ember.Object.extend(Ember.Evented, Ember.Copyable, LoadPromise, {
                     if (!(desc && desc instanceof Ember.ComputedProperty)) {
                         self.set(prop, json[prop]);
                     }*/
-                    self.set(prop, json[prop]);
+                    var value = json[prop];
+                    if (Ember.typeOf(value) === 'object') {
+                        self.set(prop, Ember.Object.create(value));
+                    } else if (Ember.typeOf(value) === 'array') {
+                        var arr = Ember.A();
+                        value.forEach(function(item) {
+                            arr.pushObject(
+                                Ember.Object.create(item)
+                            );
+                        });
+                        self.set(prop, arr);
+                    } else {
+                        self.set(prop, json[prop]);
+                    }
                 }
             }
         });

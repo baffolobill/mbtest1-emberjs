@@ -59,6 +59,11 @@ var ServerTemplateAddModal = ModalBaseView.extend(Full, Form, Save, {
     preselectHDDFormFactors: function() {
         var o_id = this.get('hddFormFactorsForSelect.firstObject').value;
         this.set('selectedHDDFormFactor', o_id);
+        this.get('model')['hdds'].forEach(function(hdd) {
+            if (Ember.get(hdd, 'hdd_form_factor') === null) {
+                Ember.set(hdd, 'hdd_form_factor', o_id);
+            }
+        });
     }.observes('hddFormFactorsForSelect.@each'),
 
     // hdd connection type
@@ -75,11 +80,16 @@ var ServerTemplateAddModal = ModalBaseView.extend(Full, Form, Save, {
         var o_id = this.get('hddConnectionTypeForSelect.firstObject').value;
         Ember.Logger.debug('preselectHDDConnectionTypes: ', o_id);
         this.set('selectedHDDConnectionType', o_id);
+        this.get('model')['hdds'].forEach(function(hdd) {
+            if (Ember.get(hdd, 'hdd_connection_type') === null) {
+                Ember.set(hdd, 'hdd_connection_type', o_id);
+            }
+        });
     }.observes('hddConnectionTypes.@each'),
 
     model: function() {
         return ServerTemplate.create({
-            hdds: []
+            hdds: Ember.A(),
         });
     }.property(),
 
@@ -90,17 +100,15 @@ var ServerTemplateAddModal = ModalBaseView.extend(Full, Form, Save, {
 
     actions: {
         save: function() {
-            Ember.Logger.debug(this.get('model')['hdds']);
-
-            //this.save(this.get("model"));
+            this.save(this.get("model"));
         },
         addHdd: function() {
-            Ember.Logger.debug('addHdd:', this.get('selectedHDDConnectionType'));
-            this.get('model')['hdds'].pushObject({
+            var obj = Ember.Object.create({
                 hdd_qty: 1,
-                hdd_connection_type: this.get('selectedHDDConnectionType'),
-                hdd_form_factor: this.get('selectedHDDFormFactor')
+                hdd_connection_type: null,
+                hdd_form_factor: null
             });
+            this.get('model')['hdds'].pushObject(obj);
         }
     },
 });

@@ -55,6 +55,7 @@
         {{view "form-fields/select-form-field"
             model=hdd
             content=view.parentView.hddFormFactorsForSelect
+            value=hdd.hdd_form_factor
             labelText="HDD Form Factor"
             optionValuePath="content.value"
             optionLabelPath="content.label"
@@ -64,6 +65,7 @@
         {{view "form-fields/select-form-field"
             model=hdd
             content=view.parentView.hddConnectionTypeForSelect
+            value=hdd.hdd_connection_type
             labelText="HDD Connection Type"
             optionValuePath="content.value"
             optionLabelPath="content.label"

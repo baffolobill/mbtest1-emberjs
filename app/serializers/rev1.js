@@ -1,3 +1,5 @@
+import Ember from "ember";
+
 var JSON_PROPERTY_KEY = '__json';
 var LINKS_PROPERTY_KEY = '__links';
 var EMBEDDED_DATA_PROPERTY_KEY = '__embedded';
@@ -14,153 +16,171 @@ var Rev1Serializer = Ember.Object.extend({
         return json;
     },
 
-    extractSingle: function(rootJson, href) {
-        var modelObj, modelObjNew;
-        var objType;
+    extractSingle: function(rawPayload, href) {
+        var included_storage = Ember.Object.createWithMixins(Ember.Copyable);
+        var payload = this.normalizePayload(rawPayload, included_storage);
+        var primaryRecord;
 
-        Ember.Logger.debug('extractSingle: rootJson=', rootJson);
+        Ember.Logger.debug('extractSingle: rawPayload=', rawPayload);
 
-        var objTypes = _.keys(_.omit(rootJson, "included", "links", "meta", "errors"));
-        if (objTypes.length === 0) {
+        if (!!!payload['data']) {
+            Ember.warn('Key <data> is required in payload.');
             return null;
         }
 
-        if (objTypes.length > 1) {
-            Ember.Logger.debug('extractSingle: objTypes=', objTypes);
-            Ember.warn("Got more than we bargained for in extractSingle");
+        var value = payload['data'];
+        if (value === null) {
+            return null;
         }
 
-        objType = objTypes[0];
-
-        modelObj = rootJson[objType] && rootJson[objType][0];
-
-        // Hack to make it serialize as rev0 just in case.
-        if (!modelObj) {
-            modelObj = rootJson[objType];
-            //modelObj = rootJson;
+        if (Ember.typeOf(value) === 'array') {
+            Ember.warn('Single object have to be returned under the key <data>.');
+            return null;
         }
 
-        modelObjNew = {};
-        for (var k in modelObj) {
-            modelObjNew[k] = modelObj[k];
-        }
+        //var typeName = value['type'];
+        primaryRecord = this.normalize(value, included_storage);
 
+        Ember.Logger.debug('extractSingle: primaryRecord=', primaryRecord);
 
-        this._populateObject(modelObjNew, objType, rootJson);
-        Ember.Logger.debug('modelObjNew:', modelObjNew);
-
-        return modelObjNew;
+        return primaryRecord;
     },
 
-    extractCollection: function(rootJson) {
-        var collection = [];
+    extractCollection: function(rawPayload) {
         var self = this;
+        var included_storage = Ember.Object.createWithMixins(Ember.Copyable);
 
-        /*var populateFunc = function(val) {
-            collection.push(self._populateObject(val, typeName, rootJson));
-        };
-        for (var typeName in rootJson) {
-            var vals = rootJson[typeName];
-            if ($.isArray(vals)) {
-                _.each(vals, populateFunc);
-            }
-        }*/
-        rootJson['data'].forEach(function(rec, index){
-            collection.push(self._populateObject(rec, rec['type'], rootJson));
+        var nextUri = rawPayload.links ? rawPayload.links.next : null;
+        var counts = rawPayload.meta ? rawPayload.meta.counts : null;
+        var total = rawPayload.meta ? rawPayload.meta.total : null;
+
+        var payload = this.normalizePayload(rawPayload, included_storage);
+
+        if (Ember.typeOf(payload['data']) !== 'array') {
+            Ember.warn('Array must be returned.');
+            return null;
+        }
+
+        var collection = [];
+        payload['data'].forEach(function(value){
+            collection.push(self.normalize(value, included_storage));
         });
-
-        var linked = rootJson.linked ? rootJson.linked : null;
-        //var nextUri = rootJson.meta ? rootJson.meta.next : null;
-        var nextUri = rootJson.links ? rootJson.links.next : null;
-        var counts = rootJson.meta ? rootJson.meta.counts : null;
-        var total = rootJson.meta ? rootJson.meta.total : null;
 
         return {
             items: collection,
-            linked: linked,
+            //linked: linked,
             next_uri: nextUri,
             counts: counts,
             total: total
         };
     },
 
-    _populateObject: function(modelObj, objType, rootJson) {
-        var linksValues = {};
-        linksValues[objType + '.id'] = modelObj.id;
-        linksValues[objType + '.self'] = modelObj.id;
+    resolveLink: function(linkage, included_storage) {
+        var original = included_storage[linkage['type']][linkage['id']];
+        /*var embered = Ember.Object.createWithMixins(Ember.Copyable);
+        for (var prop in original) {
+            embered.set(prop, Ember.copy(original[prop], true));
+        }
+        return embered;*/
+        return Ember.copy(original, true);
+    },
 
-        if (modelObj.links) {
-            for (var key in modelObj.links) {
-                linksValues[objType + '.' + key] = modelObj.links[key];
+    /**
+    * Flatten links
+    */
+    normalize: function(hash, included_storage) {
+        if (!hash) { return hash; }
 
-                //dirty hack
-                if (rootJson['included']) {
-                    var embedded_value = null;
-                    for (var i=0, l=rootJson['included'].length; i<l; i++) {
-                        var val = rootJson['included'][i];
-                        var included_key = null;
-                        for (var link in rootJson['links']) {
-                            var link_type = link.split('.');
-                            if (link_type[link_type.length-1] == key) {
-                                included_key = rootJson['links'][link]['type'];
-                            }
-                        }
-                        //var link = rootJson['links'][objType+'.'+key];
-                        //var included_key = link && link['type'];
-                        if (included_key === val['type'] && modelObj.links[key] == val['id']) {
-                            embedded_value = val;
-                            break;
-                        }
-                    }
-                    modelObj[key] = embedded_value;
-                }
-            }
+        var key, relation, linkage, relation_key;
+        var json = { };
+        var links = hash['links'];
+        var meta = hash['meta'];
+        delete hash['links'];
+        delete hash['meta'];
+
+        if (Ember.typeOf('links') === 'object') {
+            json['uri'] = links['self'];
+            delete links['self'];
         }
 
-        var replaceHrefFunc = function(match, linkParam) {
-            var replacement = linksValues[linkParam];
+        for (key in hash) {
+            json[key] = hash[key];
+        }
+        json['_type'] = json['type'];
+        delete json['type'];
 
-            if (replacement === undefined) {
-                Ember.Logger.warn("Couldn't find replacement for param %@".fmt(linkParam));
-                throw new Error("Undefined value for URL macro");
-            }
-
-            if (replacement === null) {
-                throw new Error("Null value for URL macro");
-            }
-
-            return replacement;
-        };
-
-        var templatedLinks = {};
-        var objPropertyName = objType;
-        for (var link in rootJson.links) {
-            if (link.indexOf(objPropertyName + ".") === 0) {
-                var linkName = link.substring(objPropertyName.length + 1);
-
-                if (linkName.indexOf('.') !== -1) {
+        if (Ember.typeOf(links) === 'object') {
+            for (relation_key in links) {
+                relation = links[relation_key];
+                if (!!!relation) {
+                    json[relation_key] = null;
                     continue;
                 }
-
-                // Template all the links
-                var href = rootJson.links[link];
-
-                try {
-                    var replacedHref = href.replace(/\{([\.\w]+)\}/g, replaceHrefFunc);
-                    templatedLinks[linkName] = replacedHref;
-                } catch (e) {
-                    templatedLinks[linkName] = null;
+                linkage = relation['linkage'];
+                if (!!!linkage) {
+                    Ember.warn('Attribute <linkage> cannot be null.');
+                    json[relation_key] = null;
+                    continue;
+                }
+                if (Ember.typeOf(linkage) === 'array' && linkage.length) {
+                    json[relation_key] = [];
+                    for (var i=0,l=linkage.length; i<l; i++) {
+                        json[relation_key].push(this.resolveLink(linkage[i], included_storage));
+                    }
+                } else {
+                    json[relation_key] = this.resolveLink(linkage, included_storage);
                 }
             }
         }
+        return json;
+    },
 
-        for (link in templatedLinks) {
-            modelObj[link + "_uri"] = templatedLinks[link];
+    /**
+    * Extract top-level "links" before normalizing.
+    */
+    normalizePayload: function(payload, included_storage) {
+        if (payload.included) {
+            this.extractIncluded(payload.included, included_storage);
+            delete payload.included;
+        }
+        return payload;
+    },
+
+    /*
+    * Extract top-level "included" containing associated objects
+    */
+    extractIncluded: function(included, storage) {
+        var link, value, relation;
+        var typeName, objectId, linkage, linkedTypeName, relationId;
+
+        // fill storage at first
+        for (var i=0, l=included.length; i<l; i++) {
+            value = included[i];
+            value['_type'] = value['type'];
+            delete value['type'];
+            typeName = value['_type'];
+            objectId = value['id']+"";
+            storage[typeName] = storage[typeName] || {};
+            storage[typeName][objectId] = value;
         }
 
-        modelObj.uri = modelObj.href;
-        modelObj._type = objType;//.replace(/s$/, '');
-        return modelObj;
+        // find && replace 'links'
+        for (typeName in storage) {
+            for (objectId in storage[typeName]) {
+                value = Ember.copy(storage[typeName][objectId], true);
+                if (!value.links) {
+                    continue;
+                }
+                for (relation in value.links) {
+                    linkage = value.links[relation]['linkage'];
+                    relationId = linkage['id']+"";
+                    linkedTypeName = linkage["type"];
+                    value[relation] = Ember.copy(storage[linkedTypeName][relationId], true);
+                }
+                delete value.links;
+                storage[typeName][objectId] = value;
+            }
+        }
     },
 
     // Taken from http://stackoverflow.com/questions/9211844/reflection-on-emberjs-objects-how-to-find-a-list-of-property-keys-without-knowi

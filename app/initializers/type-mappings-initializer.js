@@ -19,5 +19,6 @@ export default {
     registerMapping("Server Templates", "servertemplate");
     registerMapping("Properties", "property");
     registerMapping("PropertyOptions", "propertyoption");
+    registerMapping("Property Options", "propertyoption");
   }
 };
